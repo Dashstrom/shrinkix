@@ -27,7 +27,7 @@ Shrinkix
   :target: https://pypi.org/project/shrinkix
   :alt: Python : versions
 
-.. |discord| image:: https://img.shields.io/badge/Discord-Image%20Shrinker-5865F2?style=flat&logo=discord&logoColor=white
+.. |discord| image:: https://img.shields.io/badge/Discord-dashstrom-5865F2?style=flat&logo=discord&logoColor=white
   :target: https://dsc.gg/dashstrom
   :alt: Discord
 
@@ -51,7 +51,7 @@ Installation from scratch
 Windows (Chocolatey, Python, Visual Studio Build Tools, pipx)
 *************************************************************
 
-Open an Admin PowerShell with `windows + R`, write `powershell` then press `ctrl + shift + enter`.
+Open an Admin PowerShell with :text:`windows + R`, write :text:`powershell` then press :text:`ctrl + shift + enter`.
 
 ..  code-block:: powershell
 
