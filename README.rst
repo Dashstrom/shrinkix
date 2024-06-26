@@ -51,7 +51,7 @@ Installation from scratch
 Windows (Chocolatey, Python, Visual Studio Build Tools, pipx)
 *************************************************************
 
-Open an Admin PowerShell with :text:`windows + R`, write :text:`powershell` then press :text:`ctrl + shift + enter`.
+Open an Admin PowerShell with :bash:`windows + R`, write :bash:`powershell` then press :bash:`ctrl + shift + enter`.
 
 ..  code-block:: powershell
 
