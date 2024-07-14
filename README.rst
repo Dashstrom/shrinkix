@@ -102,7 +102,7 @@ Usage as script
 
 ..  code-block:: bash
 
-  shrinkix image.png --max-width 1024 --max-height 1024
+  shrinkix image.png --max-width 1024 --max-height 1024 --artist 'Dashstrom' --copyright 'dashstrom.pro@gmail.com'
 
 Usage as module
 ***************

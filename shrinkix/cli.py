@@ -49,12 +49,30 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "path",
         nargs="+",
-        help="Path to images or directories",
+        help="Path to images or directories.",
     )
     parser.add_argument(
         "--output-dir",
         default="shrunk",
-        help="Path to images or directories",
+        help="Output for all images.",
+    )
+    parser.add_argument(
+        "--fast-color-reduction",
+        action="store_true",
+        help="Use faster algorithms for color reduction.",
+    )
+    parser.add_argument(
+        "--format",
+        choices=["PNG", "JPG"],
+        help="Export format.",
+    )
+    parser.add_argument(
+        "--copyright",
+        help="Copyright to add in exif metadata.",
+    )
+    parser.add_argument(
+        "--artist",
+        help="Artist to add in exif metadata.",
     )
     return parser
 
@@ -78,6 +96,10 @@ def entrypoint(argv: Optional[Sequence[str]] = None) -> None:
             max_width=args.max_width,
             max_height=args.max_height,
             keep_metadata=args.keep_metadata,
+            fast_color_reduction=args.fast_color_reduction,
+            format=args.format,
+            copyright=args.copyright,
+            artist=args.artist,
         )
         shrinker.bulk(args.path, args.output_dir)
     except Exception as err:  # NoQA: BLE001

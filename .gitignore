@@ -108,3 +108,8 @@ public/
 
 # Ruff cache
 .ruff_cache/
+
+# Image at root
+*.png
+*.jpg
+shrunk/

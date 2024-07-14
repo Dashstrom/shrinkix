@@ -15,7 +15,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "shrinkix"
-version = "0.0.1"
+version = "0.1.0"
 description = "Reduces the size of images for the web."
 license = "MIT"
 authors = [
@@ -94,6 +94,17 @@ packages = [
 python = ">=3.8"
 
 typing-extensions = ">=4.8.0"
+pillow = "*"
+tqdm = "*"
+piexif = "*"
+scikit-learn = [
+  { version = "<1.4.0", python = "<=3.8"},
+  { version = "*", python = ">3.8"}
+]
+numpy = [
+  { version = "<1.25.0", python = "<=3.8"},
+  { version = "*", python = ">3.8"}
+]
 
 pytest = { version = "8.2.0", optional = true }
 pytest-mock = { version = "3.14.0", optional = true }
@@ -107,12 +118,13 @@ sphinx-rtd-theme = { version = "2.0.0", optional = true }
 sphinxcontrib-mermaid = { version = "0.9.2", optional = true }
 poethepoet = { version = "0.26.1", optional = true }
 commitizen = { version = "3.25.0", optional = true }
-pillow = "^10.3.0"
+types-tqdm = { version = "4.66.0.20240417", optional = true }
+
 
 [tool.poetry.extras]
 test = ["pytest", "pytest-mock"]
 cov = ["pytest", "pytest-mock", "coverage", "pytest-cov"]
-lint = ["pytest", "pytest-mock", "mypy", "ruff"]
+lint = ["pytest", "pytest-mock", "mypy", "ruff", "types-tqdm"]
 format = ["pytest", "pytest-mock", "mypy", "ruff"]
 docs = ["sphinx", "sphinx-rtd-theme", "sphinxcontrib-mermaid"]
 tasks = ["poethepoet", "pre-commit", "commitizen"]
@@ -300,9 +312,9 @@ strict_equality = true
 warn_unused_configs = true
 
 # Exemple for missing types
-#[[tool.mypy.overrides]]
-#module = ["numpy.*"]
-#ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["sklearn.*", "piexif.*"]
+ignore_missing_imports = true
 
 
 # ----------------------------------------------------------------------
