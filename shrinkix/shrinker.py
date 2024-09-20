@@ -5,13 +5,13 @@ from math import floor, sqrt
 from time import time
 from typing import Any, Dict, List, Literal, Optional
 
-import numpy as np
-import piexif
 from PIL import Image
-from sklearn.cluster import BisectingKMeans
 from tqdm import tqdm
 
 from .utils import AllImageSource, PathLike, PathOrFile, open_image, ratio
+
+MAX_COLORS = 256
+MAX_SAMPLE = 100_00
 
 
 class Shrinkix:
@@ -64,15 +64,17 @@ class Shrinkix:
 
         # Remove metadata
         if not self.keep_metadata:
-            data = list(im.getdata())
-            im = Image.new(im.mode, im.size)
-            im.putdata(data)  # type: ignore[no-untyped-call]
+            data = list(im.convert("RGBA").getdata())
+            im = Image.new("RGBA", im.size)
+            im.putdata(data)
 
         # Reduce colors
         im = self.reduce(im)
         options: Dict[str, Any] = {"format": self.format}
 
         # Add exif information
+        import piexif
+
         if self.artist is not None or self.copyright is not None:
             exif_dict: Dict[str, Any] = {"0th": {}}
             if self.artist is not None:
@@ -132,6 +134,7 @@ class Shrinkix:
     def reduce(
         self,
         image: AllImageSource,
+        colors: Optional[int] = None,
     ) -> Image.Image:
         """Reduce image colors."""
         # Open and format for model
@@ -154,20 +157,35 @@ class Shrinkix:
             im = im.convert("RGBA")
             alpha = True
 
-        if self.fast_color_reduction:
-            return im.convert(
-                "PA" if alpha else "P",
-                palette=Image.Palette.ADAPTIVE,
-                colors=256,
-            )
-
         # Convert data to numpy array
+        import numpy as np
+
         arr = np.asarray(im)
         h, w = arr.shape[:2]
         X = arr.reshape(-1, 4 if alpha else 3)  # noqa: N806
 
+        if colors is None:
+            if X.shape[0] > MAX_SAMPLE:
+                index = np.random.choice(X.shape[0], MAX_SAMPLE, replace=False)  # noqa: NPY002
+                sample = X[index]
+            else:
+                sample = X
+            blocks, block_counts = np.unique(
+                sample // 16,
+                axis=0,
+                return_counts=True,
+            )
+            colors = len(block_counts)
+            if colors > MAX_COLORS:
+                colors = MAX_COLORS
+
+        if self.fast_color_reduction:
+            return im.quantize(colors)
+
         # Create model
-        kmeans = BisectingKMeans(n_clusters=256)
+        from sklearn.cluster import BisectingKMeans
+
+        kmeans = BisectingKMeans(n_clusters=colors, max_iter=100)
 
         # Resolve palette indexes
         palette_indexes = kmeans.fit_predict(X)
@@ -188,7 +206,7 @@ class Shrinkix:
         reduced_image.putpalette(palette, rawmode="RGBA" if alpha else "RGB")
 
         # Paste the pixel data into the image
-        reduced_image.putdata(palette_indexes)  # type: ignore[no-untyped-call]
+        reduced_image.putdata(palette_indexes)
 
         # return the final result
         return reduced_image

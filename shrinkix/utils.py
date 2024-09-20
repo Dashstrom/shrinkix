@@ -16,14 +16,14 @@ def open_image(image: AllImageSource) -> Image.Image:
     # Load image
     if isinstance(image, (str, pathlib.PurePath)):
         path = pathlib.Path(image)
-        im = Image.open(path.open("rb"))
+        im: Image.Image = Image.open(path.open("rb"))
     elif isinstance(image, Image.Image):
         im = image
     else:
         try:
-            im = Image.fromarray(image)  # type: ignore[no-untyped-call]
+            im = Image.fromarray(image)  # type: ignore[arg-type]
         except AttributeError:
-            im = Image.open(image)
+            im = Image.open(image)  # type: ignore[arg-type]
     return im
 
 
