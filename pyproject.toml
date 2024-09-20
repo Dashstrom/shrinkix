@@ -15,7 +15,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "shrinkix"
-version = "0.1.0"
+version = "0.2.0"
 description = "Reduces the size of images for the web."
 license = "MIT"
 authors = [
