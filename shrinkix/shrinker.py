@@ -44,6 +44,7 @@ class Shrinkix:
         self,
         image: AllImageSource,
         output: PathOrFile,
+        colors: Optional[int] = None,
     ) -> None:
         """Shrink an image."""
         # Load image
@@ -69,7 +70,7 @@ class Shrinkix:
             im.putdata(data)
 
         # Reduce colors
-        im = self.reduce(im)
+        im = self.reduce(im, colors=colors)
         options: Dict[str, Any] = {"format": self.format}
 
         # Add exif information
@@ -104,6 +105,7 @@ class Shrinkix:
         self,
         files: List[PathLike],
         output: PathLike,
+        colors: Optional[int] = None,
     ) -> None:
         """Shrink a list of file and export it in output."""
         root = pathlib.Path(output)
@@ -123,7 +125,7 @@ class Shrinkix:
             for src, dst in bar:
                 bar.write(f"Processing {src}")
                 start = time()
-                self.shrink(src, dst)
+                self.shrink(src, dst, colors=colors)
                 end = time()
                 elapsed = end - start
                 bar.write(
@@ -170,7 +172,7 @@ class Shrinkix:
                 sample = X[index]
             else:
                 sample = X
-            blocks, block_counts = np.unique(
+            _, block_counts = np.unique(
                 sample // 16,
                 axis=0,
                 return_counts=True,

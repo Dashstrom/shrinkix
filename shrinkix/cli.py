@@ -32,6 +32,7 @@ def get_parser() -> argparse.ArgumentParser:
         required=False,
     )
     parser.add_argument(
+        "-k",
         "--keep-metadata",
         action="store_true",
         help="Keep metadata.",
@@ -52,16 +53,26 @@ def get_parser() -> argparse.ArgumentParser:
         help="Path to images or directories.",
     )
     parser.add_argument(
+        "-o",
         "--output-dir",
         default="shrunk",
         help="Output for all images.",
     )
     parser.add_argument(
+        "-r",
         "--fast-color-reduction",
         action="store_true",
         help="Use faster algorithms for color reduction.",
     )
     parser.add_argument(
+        "-c",
+        "--colors",
+        type=int,
+        required=False,
+        help="Colors t use in color reduction.",
+    )
+    parser.add_argument(
+        "-f",
         "--format",
         choices=["PNG", "JPG"],
         help="Export format.",
@@ -101,7 +112,7 @@ def entrypoint(argv: Optional[Sequence[str]] = None) -> None:
             copyright=args.copyright,
             artist=args.artist,
         )
-        shrinker.bulk(args.path, args.output_dir)
+        shrinker.bulk(args.path, args.output_dir, colors=args.colors)
     except Exception as err:  # NoQA: BLE001
         logger.critical("Unexpected error", exc_info=err)
         logger.critical("Please, report this error to %s.", __issues__)
