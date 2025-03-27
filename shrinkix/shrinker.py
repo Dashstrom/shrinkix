@@ -8,7 +8,14 @@ from typing import Any, Dict, List, Literal, Optional
 from PIL import Image
 from tqdm import tqdm
 
-from .utils import AllImageSource, PathLike, PathOrFile, open_image, ratio
+from .utils import (
+    AllImageSource,
+    PathLike,
+    PathOrFile,
+    open_image,
+    ratio,
+    size,
+)
 
 MAX_COLORS = 256
 MAX_SAMPLE = 100_00
@@ -18,29 +25,35 @@ class Shrinkix:
     def __init__(  # noqa: PLR0913
         self,
         *,
-        format: Optional[Literal["PNG", "JPG"]] = None,  # noqa: A002
+        format: Optional[Literal["PNG", "JPEG", "JPG", "WEBP"]] = None,  # noqa: A002
         keep_metadata: Optional[bool] = None,
         max_width: Optional[int] = None,
         max_height: Optional[int] = None,
-        fast_color_reduction: Optional[bool] = None,
+        experimental_color_reduction: Optional[bool] = None,
         verbose: bool = False,
         artist: Optional[str] = None,
         copyright: Optional[str] = None,  # noqa: A002
+        background: Optional[str] = None,
+        quality: Optional[int] = None,
     ) -> None:
         """Instantiate Shrinkix."""
         self.keep_metadata = keep_metadata is True
-        self.fast_color_reduction = fast_color_reduction is True
+        self.experimental_color_reduction = bool(experimental_color_reduction)
         self.max_width = max_width
         self.max_height = max_height
         self.verbose = verbose
         self.copyright = copyright
         self.artist = artist
+        self.background = background
+        self.quality = int(quality) if quality is not None else None
         if format is None:
             self.format = "PNG"
+        elif format.casefold() == "jpg":
+            self.format = "JPEG"
         else:
-            self.format = format
+            self.format = format.upper()
 
-    def shrink(
+    def shrink(  # noqa: PLR0912, C901
         self,
         image: AllImageSource,
         output: PathOrFile,
@@ -62,6 +75,12 @@ class Shrinkix:
                 (floor(w * ratio), floor(h * ratio)),
                 resample=Image.Resampling.NEAREST,
             )
+
+        # Replace background
+        if self.background is not None:
+            new_im = Image.new("RGBA", im.size, self.background)
+            new_im.paste(im, (0, 0), im.convert("RGBA"))
+            im = new_im.convert("RGB")
 
         # Remove metadata
         if not self.keep_metadata:
@@ -85,11 +104,22 @@ class Shrinkix:
             options["exif"] = piexif.dump(exif_dict)
 
         # Save with optimization
+        if self.quality is None:
+            quality = floor(30 + 65 * (1 - min(sqrt(w * h) / 4096, 1)))
+        else:
+            quality = self.quality
+        # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#png
         if self.format == "PNG":
             options["optimize"] = True
-        elif self.format == "JPG":
-            quality = floor(30 + 65 * (1 - min(sqrt(w * h) / 4096, 1)))
+        # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg
+        elif self.format == "JPEG":
             options["quality"] = quality
+        # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#webp
+        elif self.format == "WEBP":
+            options["lossless"] = False
+            options["quality"] = quality
+            options["alpha_quality"] = quality
+            options["method"] = 6
         if isinstance(output, (str, pathlib.PurePath)):
             output_path = pathlib.Path(output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -123,14 +153,15 @@ class Shrinkix:
 
         with tqdm(paths.items()) as bar:
             for src, dst in bar:
-                bar.write(f"Processing {src}")
+                bar.write(f"Shrinking {src}")
                 start = time()
                 self.shrink(src, dst, colors=colors)
                 end = time()
                 elapsed = end - start
                 bar.write(
                     f"Export at {dst}, "
-                    f"ratio: {ratio(src, dst):.2%}, time: {elapsed:.3f}s",
+                    f"ratio: {ratio(src, dst):.2%}, time: {elapsed:.3f}s, "
+                    f"size: {size(src)} to {size(dst)}",
                 )
 
     def reduce(
@@ -142,8 +173,8 @@ class Shrinkix:
         # Open and format for model
         im = open_image(image)
 
-        # Palette is not supported on JPG
-        if self.format == "JPG":
+        # Palette is not supported on JPEG or WEBP
+        if self.format in ("JPEG", "WEBP"):
             return im.convert("RGB") if im.mode != "RGB" else im
 
         # No optimization on palette or black and white
@@ -181,7 +212,7 @@ class Shrinkix:
             if colors > MAX_COLORS:
                 colors = MAX_COLORS
 
-        if self.fast_color_reduction:
+        if not self.experimental_color_reduction:
             return im.quantize(colors)
 
         # Create model

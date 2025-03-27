@@ -1,14 +1,16 @@
 """Utils functions."""
 
 import pathlib
-from typing import IO, Any, Union
+from typing import IO, TYPE_CHECKING, Any, Union
 
-import numpy.typing as npt
 from PIL import Image
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 PathLike = Union[str, pathlib.Path]
 PathOrFile = Union[PathLike, IO[bytes]]
-AllImageSource = Union[PathOrFile, Image.Image, npt.NDArray[Any]]
+AllImageSource = Union[PathOrFile, Image.Image, "npt.NDArray[Any]"]
 
 
 def open_image(image: AllImageSource) -> Image.Image:
@@ -30,3 +32,13 @@ def open_image(image: AllImageSource) -> Image.Image:
 def ratio(before: pathlib.Path, after: pathlib.Path) -> float:
     """Return compression ratio."""
     return after.stat().st_size / before.stat().st_size
+
+
+def size(path: pathlib.Path, suffix: str = "B") -> str:
+    """Return the human readable size."""
+    num: float = path.stat().st_size
+    for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
+        if abs(num) < 1024.0:  # noqa: PLR2004
+            return f"{num:3.1f}{unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f}Yi{suffix}"

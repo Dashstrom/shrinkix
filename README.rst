@@ -51,7 +51,7 @@ Installation from scratch
 Windows (Chocolatey, Python, Visual Studio Build Tools, pipx)
 *************************************************************
 
-Open an Admin PowerShell with :bash:`windows + R`, write :bash:`powershell` then press :bash:`ctrl + shift + enter`.
+Open an Admin PowerShell with :bash:`windows + X`, then press :bash:`a`.
 
 ..  code-block:: powershell
 
@@ -84,8 +84,8 @@ Mac (Homebrew and pipx)
   pipx ensurepath
 
 
-Package installation
-********************
+Package installation (All System)
+*********************************
 
 You can install :bash:`shrinkix` using `pipx <https://pipx.pypa.io/stable/>`_
 from `PyPI <https://pypi.org/project>`_

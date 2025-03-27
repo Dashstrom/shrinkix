@@ -6,7 +6,6 @@ import sys
 from typing import Optional, Sequence
 
 from .core import __issues__, __summary__, __version__
-from .shrinker import Shrinkix
 
 LOG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
 logger = logging.getLogger(__name__)
@@ -59,10 +58,10 @@ def get_parser() -> argparse.ArgumentParser:
         help="Output for all images.",
     )
     parser.add_argument(
-        "-r",
-        "--fast-color-reduction",
+        "-e",
+        "--experimental-color-reduction",
         action="store_true",
-        help="Use faster algorithms for color reduction.",
+        help="Use experimental color reduction algorithm.",
     )
     parser.add_argument(
         "-c",
@@ -74,8 +73,18 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-f",
         "--format",
-        choices=["PNG", "JPG"],
+        choices=["PNG", "JPEG", "WEBP"],
         help="Export format.",
+    )
+    parser.add_argument(
+        "-b",
+        "--background",
+        help="Replace transparency with this color.",
+    )
+    parser.add_argument(
+        "-q",
+        "--quality",
+        help="Image quality (JPEG).",
     )
     parser.add_argument(
         "--copyright",
@@ -103,14 +112,17 @@ def entrypoint(argv: Optional[Sequence[str]] = None) -> None:
         parser = get_parser()
         args = parser.parse_args(argv)
         setup_logging(args.verbose)
+        from .shrinker import Shrinkix
+
         shrinker = Shrinkix(
             max_width=args.max_width,
             max_height=args.max_height,
             keep_metadata=args.keep_metadata,
-            fast_color_reduction=args.fast_color_reduction,
+            experimental_color_reduction=args.experimental_color_reduction,
             format=args.format,
             copyright=args.copyright,
             artist=args.artist,
+            background=args.background,
         )
         shrinker.bulk(args.path, args.output_dir, colors=args.colors)
     except Exception as err:  # NoQA: BLE001
