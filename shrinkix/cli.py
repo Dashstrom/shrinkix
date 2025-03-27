@@ -3,17 +3,25 @@
 import argparse
 import logging
 import sys
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import NoReturn, Optional
 
-from .core import __issues__, __summary__, __version__
+from .info import __issues__, __summary__, __version__
 
 LOG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
 logger = logging.getLogger(__name__)
 
 
+class HelpArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> NoReturn:  # pragma: no cover
+        """Handle error from argparse.ArgumentParser."""
+        self.print_help(sys.stderr)
+        self.exit(2, f"{self.prog}: error: {message}\n")
+
+
 def get_parser() -> argparse.ArgumentParser:
     """Prepare ArgumentParser."""
-    parser = argparse.ArgumentParser(
+    parser = HelpArgumentParser(
         prog="shrinkix",
         description=__summary__,
         formatter_class=argparse.RawTextHelpFormatter,
@@ -125,7 +133,7 @@ def entrypoint(argv: Optional[Sequence[str]] = None) -> None:
             background=args.background,
         )
         shrinker.bulk(args.path, args.output_dir, colors=args.colors)
-    except Exception as err:  # NoQA: BLE001
+    except Exception as err:  # NoQA: BLE001   # pragma: no cover
         logger.critical("Unexpected error", exc_info=err)
         logger.critical("Please, report this error to %s.", __issues__)
         sys.exit(1)

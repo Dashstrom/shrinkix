@@ -48,51 +48,31 @@ Documentation is available on https://dashstrom.github.io/shrinkix
 Installation from scratch
 #########################
 
-Windows (Chocolatey, Python, Visual Studio Build Tools, pipx)
-*************************************************************
+Windows
+*******
 
 Open an Admin PowerShell with :bash:`windows + X`, then press :bash:`a`.
 
 ..  code-block:: powershell
 
-  Set-ExecutionPolicy Bypass -Scope Process -Force
-  [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-  iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-  choco install python --version=3.10.11 --override --install-arguments '/quiet PrependPath=1 Include_debug=1 Include_symbols=1 SimpleInstall=1' -y
-  choco install visualstudio2022-workload-vctools -y
-  pip install --upgrade wheel pip pipx
-  pipx ensurepath
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-Ubuntu (build requirement and pipx)
-***********************************
+MacOs and Linux
+***************
 
 ..  code-block:: bash
 
-  sudo apt -y update && sudo apt -y upgrade && sudo apt -y install python3-all-dev
-  pip install --upgrade wheel pip pipx
-  pipx ensurepath
-
-Mac (Homebrew and pipx)
-***********************
-
-..  code-block:: bash
-
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  echo "export PATH=/opt/homebrew/bin:$PATH" >> ~/.bash_profile && source ~/.bash_profile
-  brew install python
-  pip install --upgrade wheel pip pipx
-  pipx ensurepath
-
+  curl -LsSf https://astral.sh/uv/install.sh | sh
 
 Package installation (All System)
 *********************************
 
-You can install :bash:`shrinkix` using `pipx <https://pipx.pypa.io/stable/>`_
-from `PyPI <https://pypi.org/project>`_
+You can install :bash:`shrinkix` using `uv <https://github.com/astral-sh/uv>`_
+from `PyPI <https://pypi.org/project/shrinkix>`_
 
 ..  code-block:: bash
 
-  pipx install shrinkix
+  uv tool install shrinkix
 
 Usage
 #####
@@ -130,7 +110,7 @@ ensure the coverage at least stays the same before you submit a pull request.
 Setup
 *****
 
-You need to install `Poetry <https://python-poetry.org/docs/#installation>`_
+You need to install `uv <https://github.com/astral-sh/uv>`_
 and `Git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_
 for work with this project.
 
@@ -138,9 +118,8 @@ for work with this project.
 
   git clone https://github.com/Dashstrom/shrinkix
   cd shrinkix
-  poetry install --all-extras
-  poetry run poe setup
-  poetry shell
+  uv sync
+  uv run poe setup
 
 Poe
 ********
@@ -150,16 +129,18 @@ Poe is available for help you to run tasks.
 ..  code-block:: text
 
   test           Run test suite.
-  lint           Run linters: ruff linter, ruff formatter and mypy.
+  lint           Run linters: ruff checker and ruff formatter and mypy.
   format         Run linters in fix mode.
   check          Run all checks: lint, test and docs.
+  check-tag      Check if the current tag match the version.
   cov            Run coverage for generate report and html.
   open-cov       Open html coverage report in webbrowser.
   docs           Build documentation.
   open-docs      Open documentation in webbrowser.
   setup          Setup pre-commit.
   pre-commit     Run pre-commit.
-  clean          Clean cache files
+  commit         Test, commit and push.
+  clean          Clean cache files.
 
 Skip commit verification
 ************************
@@ -186,7 +167,7 @@ How to add dependency
 
 ..  code-block:: bash
 
-  poetry add 'PACKAGE'
+  uv add 'PACKAGE'
 
 Ignore illegitimate warnings
 ****************************

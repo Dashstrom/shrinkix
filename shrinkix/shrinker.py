@@ -3,7 +3,7 @@
 import pathlib
 from math import floor, sqrt
 from time import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal, Optional
 
 from PIL import Image
 from tqdm import tqdm
@@ -90,13 +90,13 @@ class Shrinkix:
 
         # Reduce colors
         im = self.reduce(im, colors=colors)
-        options: Dict[str, Any] = {"format": self.format}
+        options: dict[str, Any] = {"format": self.format}
 
         # Add exif information
         import piexif
 
         if self.artist is not None or self.copyright is not None:
-            exif_dict: Dict[str, Any] = {"0th": {}}
+            exif_dict: dict[str, Any] = {"0th": {}}
             if self.artist is not None:
                 exif_dict["0th"][piexif.ImageIFD.Artist] = self.artist
             if self.copyright is not None:
@@ -133,7 +133,7 @@ class Shrinkix:
 
     def bulk(
         self,
-        files: List[PathLike],
+        files: list[PathLike],
         output: PathLike,
         colors: Optional[int] = None,
     ) -> None:
@@ -209,8 +209,7 @@ class Shrinkix:
                 return_counts=True,
             )
             colors = len(block_counts)
-            if colors > MAX_COLORS:
-                colors = MAX_COLORS
+            colors = min(colors, MAX_COLORS)
 
         if not self.experimental_color_reduction:
             return im.quantize(colors)

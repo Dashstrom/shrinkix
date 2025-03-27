@@ -1,23 +1,19 @@
 """Main module."""
 
 from .cli import entrypoint
-from .core import (
+from .info import (
     __author__,
     __email__,
-    __license__,
-    __maintainer__,
     __summary__,
     __version__,
 )
 from .shrinker import Shrinkix
 
 __all__ = [
-    "entrypoint",
+    "Shrinkix",
     "__author__",
     "__email__",
-    "__license__",
-    "__maintainer__",
     "__summary__",
     "__version__",
-    "Shrinkix",
+    "entrypoint",
 ]
