@@ -1,6 +1,6 @@
 [project]
 name = "shrinkix"
-version = "1.0.0"
+version = "1.0.1"
 description = "Reduces the size of images for the web."
 authors = [
     { name = "Dashstrom", email = "dashstrom.pro@gmail.com" }

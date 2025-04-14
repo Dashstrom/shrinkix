@@ -93,6 +93,7 @@ def get_parser() -> argparse.ArgumentParser:
         "-q",
         "--quality",
         help="Image quality (JPEG).",
+        type=int,
     )
     parser.add_argument(
         "--copyright",
@@ -131,6 +132,7 @@ def entrypoint(argv: Optional[Sequence[str]] = None) -> None:
             copyright=args.copyright,
             artist=args.artist,
             background=args.background,
+            quality=args.quality,
         )
         shrinker.bulk(args.path, args.output_dir, colors=args.colors)
     except Exception as err:  # NoQA: BLE001   # pragma: no cover

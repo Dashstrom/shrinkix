@@ -25,7 +25,7 @@ def open_image(image: AllImageSource) -> Image.Image:
         try:
             im = Image.fromarray(image)  # type: ignore[arg-type]
         except AttributeError:
-            im = Image.open(image)
+            im = Image.open(image)  # type: ignore[arg-type]
     return im
 
 
