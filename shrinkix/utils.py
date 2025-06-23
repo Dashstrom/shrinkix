@@ -1,16 +1,29 @@
 """Utils functions."""
 
 import pathlib
-from typing import IO, TYPE_CHECKING, Any, Union
+from typing import IO, Literal, Union
 
 from PIL import Image
 
-if TYPE_CHECKING:
-    import numpy.typing as npt
-
 PathLike = Union[str, pathlib.Path]
 PathOrFile = Union[PathLike, IO[bytes]]
-AllImageSource = Union[PathOrFile, Image.Image, "npt.NDArray[Any]"]
+AllImageSource = Union[PathOrFile, Image.Image, Image.SupportsArrayInterface]
+Formats = Literal["PNG", "JPEG", "JPG", "WEBP"]
+FORMAT_MAPPER: dict[str, Formats] = {
+    "png": "PNG",
+    "jpeg": "JPEG",
+    "jpg": "JPEG",
+    "webp": "WEBP",
+}
+
+
+def verify_format(format: str) -> Formats:  # noqa: A002
+    """Get normalize format and raise error if not supported."""
+    key = format.casefold().replace(".", "")
+    if key in FORMAT_MAPPER:
+        return FORMAT_MAPPER[key]
+    message_error = f"Invalid format {format!r}"
+    raise ValueError(message_error)
 
 
 def open_image(image: AllImageSource) -> Image.Image:

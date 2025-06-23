@@ -62,8 +62,13 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-o",
         "--output-dir",
-        default="shrunk",
         help="Output for all images.",
+    )
+    parser.add_argument(
+        "-i",
+        "--inplace",
+        action="store_true",
+        help="Replace original images.",
     )
     parser.add_argument(
         "-e",
@@ -128,13 +133,27 @@ def entrypoint(argv: Optional[Sequence[str]] = None) -> None:
             max_height=args.max_height,
             keep_metadata=args.keep_metadata,
             experimental_color_reduction=args.experimental_color_reduction,
-            format=args.format,
             copyright=args.copyright,
             artist=args.artist,
             background=args.background,
             quality=args.quality,
         )
-        shrinker.bulk(args.path, args.output_dir, colors=args.colors)
+        if args.output_dir and args.inplace:
+            parser.error(
+                '"-o/--output-dir" and "-i/--inplace" are mutually exclusive'
+            )
+        if not args.output_dir or not args.inplace:
+            parser.error(
+                "you should provide at least "
+                '"-o/--output-dir" or "-i/--inplace"'
+            )
+        shrinker.bulk(
+            args.path,
+            output=args.output_dir,
+            format=args.format,
+            inplace=args.inplace,
+            colors=args.colors,
+        )
     except Exception as err:  # NoQA: BLE001   # pragma: no cover
         logger.critical("Unexpected error", exc_info=err)
         logger.critical("Please, report this error to %s.", __issues__)

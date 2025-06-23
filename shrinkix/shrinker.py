@@ -1,31 +1,35 @@
 """Module for shrink images."""
 
+import logging
 import pathlib
 from math import floor, sqrt
 from time import time
-from typing import Any, Literal, Optional
+from typing import Any, Optional
 
 from PIL import Image
 from tqdm import tqdm
 
 from .utils import (
     AllImageSource,
+    Formats,
     PathLike,
     PathOrFile,
     open_image,
     ratio,
     size,
+    verify_format,
 )
 
 MAX_COLORS = 256
 MAX_SAMPLE = 100_00
+
+logger = logging.getLogger(__name__)
 
 
 class Shrinkix:
     def __init__(  # noqa: PLR0913
         self,
         *,
-        format: Optional[Literal["PNG", "JPEG", "JPG", "WEBP"]] = None,  # noqa: A002
         keep_metadata: Optional[bool] = None,
         max_width: Optional[int] = None,
         max_height: Optional[int] = None,
@@ -46,20 +50,26 @@ class Shrinkix:
         self.artist = artist
         self.background = background
         self.quality = int(quality) if quality is not None else None
-        if format is None:
-            self.format = "PNG"
-        elif format.casefold() == "jpg":
-            self.format = "JPEG"
-        else:
-            self.format = format.upper()
 
-    def shrink(  # noqa: PLR0912, C901
+    def shrink(  # noqa: PLR0912, C901, PLR0915
         self,
         image: AllImageSource,
         output: PathOrFile,
+        format: Optional[Formats] = None,  # noqa: A002
         colors: Optional[int] = None,
     ) -> None:
         """Shrink an image."""
+        # Get the output format
+        if format is None:
+            if isinstance(output, (str, pathlib.Path)):
+                format = verify_format(pathlib.Path(output).suffix)  # noqa: A001
+            else:
+                msg = (
+                    "Cannot infer the format from the output; "
+                    "please specify the format parameter."
+                )
+                raise ValueError(msg)
+
         # Load image
         im = open_image(image)
 
@@ -88,9 +98,14 @@ class Shrinkix:
             im = Image.new("RGBA", im.size)
             im.putdata(data)
 
-        # Reduce colors
-        im = self.reduce(im, colors=colors)
-        options: dict[str, Any] = {"format": self.format}
+        # Reduce colors (Palette is not supported on JPEG or WEBP)
+        if format not in ("JPEG", "WEBP"):
+            im = self.reduce(im, colors=colors)
+        else:
+            im = im.convert("RGB") if im.mode != "RGB" else im
+
+        # Specify format in options
+        options: dict[str, Any] = {"format": format}
 
         # Add exif information
         import piexif
@@ -106,16 +121,17 @@ class Shrinkix:
         # Save with optimization
         if self.quality is None:
             quality = floor(30 + 65 * (1 - min(sqrt(w * h) / 4096, 1)))
+            logger.info("Resolved quality is %s", quality)
         else:
             quality = self.quality
         # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#png
-        if self.format == "PNG":
+        if format == "PNG":
             options["optimize"] = True
         # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg
-        elif self.format == "JPEG":
+        elif format == "JPEG":
             options["quality"] = quality
         # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#webp
-        elif self.format == "WEBP":
+        elif format == "WEBP":
             options["lossless"] = False
             options["quality"] = quality
             options["alpha_quality"] = quality
@@ -127,29 +143,50 @@ class Shrinkix:
         else:
             im.save(output, **options)
 
-    def export_name(self, path: pathlib.Path) -> str:
+    def export_name(self, path: pathlib.Path, format: Optional[str]) -> str:  # noqa: A002
         """Export name."""
-        return path.with_suffix(f".{self.format.lower()}").name
+        if format:
+            return path.with_suffix(f".{format.lower()}").name
+        return path.name
 
-    def bulk(
+    def bulk(  # noqa: PLR0912
         self,
         files: list[PathLike],
-        output: PathLike,
+        output: Optional[PathLike],
+        inplace: Optional[bool] = None,
+        format: Optional[Formats] = None,  # noqa: A002
         colors: Optional[int] = None,
     ) -> None:
         """Shrink a list of file and export it in output."""
-        root = pathlib.Path(output)
-        paths = {}
+        if inplace is None:
+            inplace = False
+        if format:
+            format = verify_format(format)  # noqa: A001
+
+        if inplace:
+            if output is not None:
+                error_message = '"output" and "inplace" are mutually exclusive'
+                raise ValueError(error_message)
+        elif output is None:
+            error_message = 'You should provide at least "output" or "inplace"'
+            raise ValueError(error_message)
+        else:
+            output = pathlib.Path(output)
+
+        paths: dict[pathlib.Path, pathlib.Path] = {}
         for file in files:
             path = pathlib.Path(file)
             if path.is_dir():
-                for sub_path in path.glob("**/*"):
+                source_paths = list(path.glob("**/*"))
+                for sub_path in source_paths:
                     if sub_path.is_file():
-                        output_path = root / self.export_name(sub_path)
-                        paths[sub_path] = output_path
+                        name = self.export_name(sub_path, format)
+                        parent = sub_path.parent if inplace else output
+                        paths[sub_path] = parent / name  # type: ignore[operator]
             else:
-                output_path = root / self.export_name(path)
-                paths[path] = output_path
+                name = self.export_name(path, format)
+                parent = path.parent if inplace else output
+                paths[path] = parent / name  # type: ignore[operator]
 
         with tqdm(paths.items()) as bar:
             for src, dst in bar:
@@ -163,6 +200,8 @@ class Shrinkix:
                     f"ratio: {ratio(src, dst):.2%}, time: {elapsed:.3f}s, "
                     f"size: {size(src)} to {size(dst)}",
                 )
+                if inplace and src.resolve() != dst.resolve():
+                    src.unlink(missing_ok=True)
 
     def reduce(
         self,
@@ -172,10 +211,6 @@ class Shrinkix:
         """Reduce image colors."""
         # Open and format for model
         im = open_image(image)
-
-        # Palette is not supported on JPEG or WEBP
-        if self.format in ("JPEG", "WEBP"):
-            return im.convert("RGB") if im.mode != "RGB" else im
 
         # No optimization on palette or black and white
         if im.mode in ("L", "LA", "P", "PA"):
@@ -210,6 +245,7 @@ class Shrinkix:
             )
             colors = len(block_counts)
             colors = min(colors, MAX_COLORS)
+            logger.info("Use %s colors", colors)
 
         if not self.experimental_color_reduction:
             return im.quantize(colors)
