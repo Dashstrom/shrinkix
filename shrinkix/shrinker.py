@@ -63,6 +63,8 @@ class Shrinkix:
         if format is None:
             if isinstance(output, (str, pathlib.Path)):
                 format = verify_format(pathlib.Path(output).suffix)  # noqa: A001
+            elif isinstance(image, (str, pathlib.Path)):
+                format = verify_format(pathlib.Path(image).suffix)  # noqa: A001
             else:
                 msg = (
                     "Cannot infer the format from the output; "
