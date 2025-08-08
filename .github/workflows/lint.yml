@@ -15,4 +15,4 @@ jobs:
         uses: ./.github/actions/setup-project
 
       - name: Run linting
-        run: uv run poe lint
+        run: uv run --no-sync poe lint

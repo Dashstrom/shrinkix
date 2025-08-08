@@ -19,7 +19,7 @@ packages = ["shrinkix"]
 
 [project]
 name = "shrinkix"
-version = "1.1.0"
+version = "1.1.1"
 description = "Reduces the size of images for the web."
 authors = [
   { name = "Dashstrom", email = "dashstrom.pro@gmail.com" }
@@ -110,10 +110,10 @@ dev = [
   "types-tqdm==4.67.0.20250516",
 
   # Linter
-  "ruff==0.12.7",
+  "ruff==0.12.8",
 
   # Tests
-  "coverage[toml]==7.10.1",
+  "coverage[toml]==7.10.2",
   "pytest-cov==6.2.1",
   "pytest==8.4.1",
   "pytest-mock==3.14.1",
