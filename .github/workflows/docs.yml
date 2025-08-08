@@ -14,16 +14,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
       - name: Set up project and environment
         uses: ./.github/actions/setup-project
 
       - name: Build documentation
-        run: uv run poe docs
+        run: uv run --no-sync poe docs
 
       - name: Deploy docs
         uses: peaceiris/actions-gh-pages@v3
