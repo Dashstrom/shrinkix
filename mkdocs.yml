@@ -1,0 +1,30 @@
+site_name: "shrinkix"
+repo_url: "https://github.com/Dashstrom/shrinkix"
+repo_name: "shrinkix"
+site_author: "Dashstrom <dashstrom.pro@gmail.com>"
+copyright: "Copyright (c) 2025, Dashstrom \u003cdashstrom.pro@gmail.com\u003e"
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+nav:
+  - Home: index.md
+  - Developer Interface: developer_interface.md
+
+theme:
+  name: "readthedocs"
+
+plugins:
+  - search
+  - mkdocstrings:  # https://github.com/mkdocstrings/mkdocstrings
+      handlers:
+        python:
+          options:
+            show_signature_annotations: true
+            show_root_heading: true
+            separate_signature: true
+markdown_extensions:
+  - pymdownx.snippets: {}

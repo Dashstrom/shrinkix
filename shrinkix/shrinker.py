@@ -1,10 +1,15 @@
-"""Module for shrink images."""
+"""Module for shrinking and optimizing images.
+
+Provides a class for resizing images, reducing colors, and exporting
+them with various options like metadata preservation, format conversion,
+and bulk processing.
+"""
 
 import logging
 import pathlib
 from math import floor, sqrt
 from time import time
-from typing import Any, Optional
+from typing import Any
 
 from PIL import Image
 from tqdm import tqdm
@@ -27,20 +32,34 @@ logger = logging.getLogger(__name__)
 
 
 class Shrinkix:
-    def __init__(  # noqa: PLR0913
+    """Image shrinker with color reduction and metadata control."""
+
+    def __init__(
         self,
         *,
-        keep_metadata: Optional[bool] = None,
-        max_width: Optional[int] = None,
-        max_height: Optional[int] = None,
-        experimental_color_reduction: Optional[bool] = None,
+        keep_metadata: bool | None = None,
+        max_width: int | None = None,
+        max_height: int | None = None,
+        experimental_color_reduction: bool | None = None,
         verbose: bool = False,
-        artist: Optional[str] = None,
-        copyright: Optional[str] = None,  # noqa: A002
-        background: Optional[str] = None,
-        quality: Optional[int] = None,
+        artist: str | None = None,
+        copyright: str | None = None,  # noqa: A002
+        background: str | None = None,
+        quality: int | None = None,
     ) -> None:
-        """Instantiate Shrinkix."""
+        """Initialize the Shrinkix instance with options.
+
+        Args:
+            keep_metadata: Whether to preserve image metadata.
+            max_width: Maximum allowed width after resizing.
+            max_height: Maximum allowed height after resizing.
+            experimental_color_reduction: Use exp. color reduction algorithm.
+            verbose: Enable verbose logging.
+            artist: Artist metadata to embed in the image.
+            copyright: Copyright metadata to embed in the image.
+            background: Background color to apply behind transparent images.
+            quality: Compression quality setting for lossy formats.
+        """
         self.keep_metadata = keep_metadata is True
         self.experimental_color_reduction = bool(experimental_color_reduction)
         self.max_width = max_width
@@ -51,14 +70,21 @@ class Shrinkix:
         self.background = background
         self.quality = int(quality) if quality is not None else None
 
-    def shrink(  # noqa: PLR0912, C901, PLR0915
+    def shrink(  # noqa: C901, PLR0912, PLR0915
         self,
         image: AllImageSource,
         output: PathOrFile,
-        format: Optional[Formats] = None,  # noqa: A002
-        colors: Optional[int] = None,
+        format: Formats | None = None,  # noqa: A002
+        colors: int | None = None,
     ) -> None:
-        """Shrink an image."""
+        """Resize, reduce colors, and save an image to the specified output.
+
+        Args:
+            image: Source image path or image object.
+            output: Output file path or file-like object.
+            format: Output image format (inferred if not specified).
+            colors: Number of colors to reduce to (if supported).
+        """
         # Get the output format
         if format is None:
             if isinstance(output, (str, pathlib.Path)):
@@ -75,7 +101,7 @@ class Shrinkix:
         # Load image
         im = open_image(image)
 
-        # Find th best ratio
+        # Find the best resizing ratio based on max dimensions
         w, h = im.size
         ratio = 1.0
         if self.max_width is not None and w > self.max_width:
@@ -88,29 +114,29 @@ class Shrinkix:
                 resample=Image.Resampling.NEAREST,
             )
 
-        # Replace background
+        # Apply background color if specified (for transparency)
         if self.background is not None:
             new_im = Image.new("RGBA", im.size, self.background)
             new_im.paste(im, (0, 0), im.convert("RGBA"))
             im = new_im.convert("RGB")
 
-        # Remove metadata
+        # Remove metadata if not keeping it
         if not self.keep_metadata:
             data = list(im.convert("RGBA").getdata())
             im = Image.new("RGBA", im.size)
             im.putdata(data)
 
-        # Reduce colors (Palette is not supported on JPEG or WEBP)
+        # Reduce colors if format supports palette
         if format not in ("JPEG", "WEBP"):
             im = self.reduce(im, colors=colors)
         else:
             im = im.convert("RGB") if im.mode != "RGB" else im
 
-        # Specify format in options
+        # Prepare save options
         options: dict[str, Any] = {"format": format}
 
-        # Add exif information
-        import piexif
+        # Add EXIF metadata if artist or copyright is specified
+        import piexif  # noqa: PLC0415
 
         if self.artist is not None or self.copyright is not None:
             exif_dict: dict[str, Any] = {"0th": {}}
@@ -120,12 +146,14 @@ class Shrinkix:
                 exif_dict["0th"][piexif.ImageIFD.Copyright] = self.copyright
             options["exif"] = piexif.dump(exif_dict)
 
-        # Save with optimization
+        # Determine quality level if not specified
         if self.quality is None:
             quality = floor(30 + 65 * (1 - min(sqrt(w * h) / 4096, 1)))
             logger.info("Resolved quality is %s", quality)
         else:
             quality = self.quality
+
+        # Set format-specific saving options
         # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#png
         if format == "PNG":
             options["optimize"] = True
@@ -138,6 +166,8 @@ class Shrinkix:
             options["quality"] = quality
             options["alpha_quality"] = quality
             options["method"] = 6
+
+        # Save the image, creating directories if needed
         if isinstance(output, (str, pathlib.PurePath)):
             output_path = pathlib.Path(output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -145,8 +175,16 @@ class Shrinkix:
         else:
             im.save(output, **options)
 
-    def export_name(self, path: pathlib.Path, format: Optional[str]) -> str:  # noqa: A002
-        """Export name."""
+    def export_name(self, path: pathlib.Path, format: str | None) -> str:  # noqa: A002
+        """Generate an output filename with the given format extension.
+
+        Args:
+            path: Original file path.
+            format: Desired output image format extension.
+
+        Returns:
+            Filename with the appropriate extension.
+        """
         if format:
             return path.with_suffix(f".{format.lower()}").name
         return path.name
@@ -154,12 +192,20 @@ class Shrinkix:
     def bulk(  # noqa: PLR0912
         self,
         files: list[PathLike],
-        output: Optional[PathLike],
-        inplace: Optional[bool] = None,
-        format: Optional[Formats] = None,  # noqa: A002
-        colors: Optional[int] = None,
+        output: PathLike | None,
+        inplace: bool | None = None,  # noqa: FBT001
+        format: Formats | None = None,  # noqa: A002
+        colors: int | None = None,
     ) -> None:
-        """Shrink a list of file and export it in output."""
+        """Shrink and export multiple image files, optionally in place.
+
+        Args:
+            files: List of file paths or directories to process.
+            output: Output directory path (ignored if inplace is True).
+            inplace: Whether to overwrite original files.
+            format: Desired output image format.
+            colors: Number of colors to reduce to.
+        """
         if inplace is None:
             inplace = False
         if format:
@@ -208,17 +254,28 @@ class Shrinkix:
     def reduce(
         self,
         image: AllImageSource,
-        colors: Optional[int] = None,
+        colors: int | None = None,
     ) -> Image.Image:
-        """Reduce image colors."""
-        # Open and format for model
+        """Reduce the number of colors in the image to optimize size.
+
+        Uses a palette-based quantization or an experimental clustering
+        method if enabled.
+
+        Args:
+            image: Image path or image object to reduce colors on.
+            colors: Number of colors to reduce to. If None, auto-detected.
+
+        Returns:
+            Image with reduced color palette.
+        """
+        # Open and format image for processing
         im = open_image(image)
 
-        # No optimization on palette or black and white
+        # Skip optimization for certain palette or grayscale modes
         if im.mode in ("L", "LA", "P", "PA"):
             return im
 
-        # Detect if alpha
+        # Detect if image has alpha channel
         if im.mode == "RGBA":
             alpha = True
         elif im.mode == "RGB":
@@ -227,13 +284,14 @@ class Shrinkix:
             im = im.convert("RGBA")
             alpha = True
 
-        # Convert data to numpy array
-        import numpy as np
+        # Convert image data to numpy array for clustering
+        import numpy as np  # noqa: PLC0415
 
         arr = np.asarray(im)
         h, w = arr.shape[:2]
         X = arr.reshape(-1, 4 if alpha else 3)  # noqa: N806
 
+        # Automatically determine number of colors if not specified
         if colors is None:
             if X.shape[0] > MAX_SAMPLE:
                 index = np.random.choice(X.shape[0], MAX_SAMPLE, replace=False)  # noqa: NPY002
@@ -252,15 +310,15 @@ class Shrinkix:
         if not self.experimental_color_reduction:
             return im.quantize(colors)
 
-        # Create model
-        from sklearn.cluster import BisectingKMeans
+        # Use Bisecting K-Means clustering for advanced palette creation
+        from sklearn.cluster import BisectingKMeans  # noqa: PLC0415
 
         kmeans = BisectingKMeans(n_clusters=colors, max_iter=100)
 
-        # Resolve palette indexes
+        # Assign palette indexes based on clustering
         palette_indexes = kmeans.fit_predict(X)
 
-        # Extract the created palette
+        # Extract and format the palette colors
         palette = (
             np.array(kmeans.cluster_centers_)
             .round()
@@ -269,14 +327,13 @@ class Shrinkix:
             .tolist()
         )
 
-        # Create blank image
+        # Create a new palette-based image
         reduced_image = Image.new("P", (w, h))
 
-        # Add palette
+        # Add the palette to the image
         reduced_image.putpalette(palette, rawmode="RGBA" if alpha else "RGB")
 
-        # Paste the pixel data into the image
+        # Apply the palette indexes as image pixel data
         reduced_image.putdata(palette_indexes)
 
-        # return the final result
         return reduced_image

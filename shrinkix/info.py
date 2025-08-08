@@ -1,18 +1,30 @@
-"""Module holding metadata."""
+"""Metadata for shrinkix."""
 
 from importlib.metadata import Distribution
 
-_DISTRIBUTION = Distribution.from_name(
-    "shrinkix",
-)
+# fmt: off
+__project__ = "shrinkix"
+
+_DISTRIBUTION = Distribution.from_name(__project__)
 _METADATA = _DISTRIBUTION.metadata
 
-if "Author" in _METADATA:
+if "Author" in _METADATA:  # pragma: no cover
     __author__ = str(_METADATA["Author"])
     __email__ = str(_METADATA["Author-email"])
-else:
+else:  # pragma: no cover
     __author__, __email__ = _METADATA["Author-email"][:-1].split(" <", 1)
-__version__ = _METADATA["Version"]
-__summary__ = _METADATA["Summary"]
-__copyright__ = f"{__author__} <{__email__}>"
+if "Maintainer" in _METADATA:  # pragma: no cover
+    __maintainer__ = str(_METADATA["Maintainer"])
+    __maintainer_email__ = str(_METADATA["Maintainer-email"])
+else:  # pragma: no cover
+    __maintainer__, __maintainer_email__ = _METADATA["Maintainer-email"][:-1].split(" <", 1)
+if "License-Expression" in _METADATA:  # pragma: no cover
+    __license__: str = _METADATA["License-Expression"]
+else:  # pragma: no cover
+    __license__ = _METADATA["License"]
+
+__version__: str = _METADATA["Version"]
+__summary__: str = _METADATA["Summary"]
+__copyright__ = "Copyright (c) 2025, Dashstrom \u003cdashstrom.pro@gmail.com\u003e"
 __issues__ = "https://github.com/Dashstrom/shrinkix/issues"
+# fmt: on

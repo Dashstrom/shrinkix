@@ -3,16 +3,56 @@
 import argparse
 import logging
 import sys
+import warnings
 from collections.abc import Sequence
-from typing import NoReturn, Optional
+from pathlib import Path
+from typing import NoReturn, TextIO
 
-from .info import __issues__, __summary__, __version__
+from .info import __issues__, __project__, __summary__, __version__
 
 LOG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
 logger = logging.getLogger(__name__)
 
 
+def showwarning(  # pragma: no cover
+    message: Warning | str,
+    category: type[Warning],
+    filename: str,
+    lineno: int,
+    file: TextIO | None = None,  # noqa: ARG001
+    line: str | None = None,  # noqa: ARG001
+) -> None:
+    """Show warning within the logger."""
+    for module_name, module in sys.modules.items():  # noqa: B007
+        module_path = getattr(module, "__file__", None)
+        if module_path and Path(module_path).samefile(filename):
+            break
+    else:
+        module_name = Path(filename).stem
+    msg = f"{category.__name__}: {message}"
+    logger = logging.getLogger(module_name)
+    try:
+        _, _, func, info = logger.findCaller()
+    except ValueError:  # pragma: no cover
+        func, info = "(unknown function)", None
+    record = logger.makeRecord(
+        logger.name,
+        logging.WARNING,
+        filename,
+        lineno,
+        msg,
+        (),
+        None,
+        func,
+        None,
+        info,
+    )
+    logger.handle(record)
+
+
 class HelpArgumentParser(argparse.ArgumentParser):
+    """Parser for show usage on error."""
+
     def error(self, message: str) -> NoReturn:  # pragma: no cover
         """Handle error from argparse.ArgumentParser."""
         self.print_help(sys.stderr)
@@ -111,22 +151,23 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def setup_logging(verbose: Optional[bool] = None) -> None:
+def setup_logging(*, verbose: bool | None = None) -> None:
     """Do setup logging."""
     # Setup logging
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.WARNING,
         format="[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s",
     )
+    warnings.showwarning = showwarning
 
 
-def entrypoint(argv: Optional[Sequence[str]] = None) -> None:
+def entrypoint(argv: Sequence[str] | None = None) -> None:
     """Entrypoint for command line interface."""
     try:
         parser = get_parser()
         args = parser.parse_args(argv)
-        setup_logging(args.verbose)
-        from .shrinker import Shrinkix
+        setup_logging(verbose=args.verbose)
+        from .shrinker import Shrinkix  # noqa: PLC0415
 
         shrinker = Shrinkix(
             max_width=args.max_width,
@@ -154,7 +195,12 @@ def entrypoint(argv: Optional[Sequence[str]] = None) -> None:
             inplace=args.inplace,
             colors=args.colors,
         )
-    except Exception as err:  # NoQA: BLE001   # pragma: no cover
-        logger.critical("Unexpected error", exc_info=err)
+    except Exception as err:  # NoQA: BLE001  # pragma: no cover
+        logger.critical(
+            "Unexpected error (%s, version %s)",
+            __project__,
+            __version__,
+            exc_info=err,
+        )
         logger.critical("Please, report this error to %s.", __issues__)
         sys.exit(1)

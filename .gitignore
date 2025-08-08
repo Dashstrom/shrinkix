@@ -95,13 +95,11 @@ htmlcov
 output/*.html
 output/*/index.html
 
-# Sphinx
+# Docs
 docs/_build
 public/
+site/
 web/
-
-# Docs
-public/
 
 # Mypy Cache
 .mypy_cache/
@@ -109,10 +107,10 @@ public/
 # Ruff cache
 .ruff_cache/
 
-# Image at root
-*.png
-*.jpg
-shrunk/
-
-# Lock
+# UV
 uv.lock
+
+# Image at root
+/*.png
+/*.jpg
+shrunk/

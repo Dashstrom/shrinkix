@@ -1,17 +1,17 @@
 """Configuration for all tests."""
 
-import pathlib
+from pathlib import Path
 
 import pytest
 
 
 @pytest.fixture
-def resources() -> pathlib.Path:
+def resources() -> Path:
     """Open test image."""
-    return pathlib.Path(__file__).parent.resolve() / "tests" / "resources"
+    return Path(__file__).parent.resolve() / "tests" / "resources"
 
 
 @pytest.fixture
-def image_path(resources: pathlib.Path) -> pathlib.Path:
+def image_path(resources: Path) -> Path:
     """Open test image."""
     return resources / "test.jpg"
