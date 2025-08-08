@@ -1,7 +1,6 @@
 # Shrinkix
 
-[![CI : Docs](https://github.com/Dashstrom/shrinkix/actions/workflows/docs.yml/badge.svg)](https://github.com/Dashstrom/shrinkix/actions/workflows/docs.yml) [![CI : Lint](https://github.com/Dashstrom/shrinkix/actions/workflows/lint.yml/badge.svg)](https://github.com/Dashstrom/shrinkix/actions/workflows/lint.yml) [![CI : Tests](https://github.com/Dashstrom/shrinkix/actions/workflows/tests.yml/badge.svg)](https://github.com/Dashstrom/shrinkix/actions/workflows/tests.yml)
-[![PyPI : shrinkix](https://img.shields.io/pypi/v/shrinkix.svg)](https://pypi.org/project/shrinkix) [![Python : versions](https://img.shields.io/pypi/pyversions/shrinkix.svg)](https://pypi.org/project/shrinkix) [![License : MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Dashstrom/shrinkix/blob/main/LICENSE)
+[![CI : Docs](https://github.com/Dashstrom/shrinkix/actions/workflows/docs.yml/badge.svg)](https://github.com/Dashstrom/shrinkix/actions/workflows/docs.yml) [![CI : Lint](https://github.com/Dashstrom/shrinkix/actions/workflows/lint.yml/badge.svg)](https://github.com/Dashstrom/shrinkix/actions/workflows/lint.yml) [![CI : Tests](https://github.com/Dashstrom/shrinkix/actions/workflows/tests.yml/badge.svg)](https://github.com/Dashstrom/shrinkix/actions/workflows/tests.yml) [![PyPI : shrinkix](https://img.shields.io/pypi/v/shrinkix.svg)](https://pypi.org/project/shrinkix) [![Python : versions](https://img.shields.io/pypi/pyversions/shrinkix.svg)](https://pypi.org/project/shrinkix) [![License : MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Dashstrom/shrinkix/blob/main/LICENSE)
 
 Reduces the size of images for the web.
 
