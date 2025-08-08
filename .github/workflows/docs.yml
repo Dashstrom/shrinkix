@@ -18,7 +18,7 @@ jobs:
         uses: ./.github/actions/setup-project
 
       - name: Build documentation
-        run: uv run --no-sync poe docs
+        run: uv run --no-sync poe doc
 
       - name: Deploy docs
         uses: peaceiris/actions-gh-pages@v3
